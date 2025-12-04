@@ -1,8 +1,19 @@
-# AWS Monitor
-
+# AWS Log and EC2 Service Monitor
 **LLM-powered monitoring and automated remediation for AWS services**
 
 AWS Monitor watches your AWS Amplify applications and EC2 instances, using AI to analyze errors and automatically fix common issues.
+
+- **Released by Chameleon Labs, LLC https://chameleonlabs.ai**<br> 
+<small>Written by **Leland Green** and **Claude Code**</small><br>
+- **Other _free_ code** on GitHub and **https://lelandgreen.com**<br>
+- **Discord server: https://discord.gg/chameleonlabs** 
+  - Free AI Chatbot!
+  - Use ChatGPT, Gemini or Claude, with helpful and fun personalities
+  - Chat with multiple LLMs at once
+  - **Free access** to **#🗨️—multi-bot🤖💻🤖💬🤖** (AKA **multi-bot**) channel on request!
+  - Includes personalities useful for coders
+  - Features **Cluade Code-like** messages while "thinking"
+  - Use extended thinking with plain language, or common LLM keywords
 
 ## Features
 
