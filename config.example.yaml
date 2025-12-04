@@ -1,0 +1,126 @@
+# AWS Monitor Configuration
+# Copy to config.yaml and customize
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AWS Settings
+# ─────────────────────────────────────────────────────────────────────────────
+aws:
+  region: us-east-1
+  # Credentials loaded from environment or IAM role:
+  # - AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY (env)
+  # - IAM Instance Profile (recommended for EC2)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Monitoring Targets
+# ─────────────────────────────────────────────────────────────────────────────
+monitoring:
+  # Amplify applications to monitor
+  # Find your app IDs: aws amplify list-apps --query 'apps[*].[appId,name]' --output table
+  amplify_apps:
+    - app_id: d1234567890abc
+      name: MyApp
+      # log_group auto-generated: /aws/amplify/d1234567890abc
+
+    # Add more apps as needed:
+    # - app_id: d0987654321xyz
+    #   name: AnotherApp
+
+  # EC2 instances to monitor (optional)
+  ec2_instances: []
+  # Example:
+  # - instance_id: i-0123456789abcdef0
+  #   name: WebServer
+  #   services:
+  #     - nginx
+  #     - node
+
+  # Polling intervals (seconds)
+  log_poll_interval: 30
+  health_check_interval: 60
+  error_lookback_minutes: 5
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LLM Configuration
+# ─────────────────────────────────────────────────────────────────────────────
+llm:
+  # Primary model for quick error triage
+  # Recommendations: gpt-5-mini (fast), gpt-5-nano (fastest), gemini-2.5-flash
+  primary_model: openai/gpt-5-mini
+
+  # Analysis model for detailed root cause analysis
+  # Recommendations: claude-opus-4-5-20251101 (best), gpt-5 (excellent)
+  analysis_model: anthropic/claude-opus-4-5-20251101
+
+  # Fallback chain when primary/analysis models fail
+  # Order matters: first available is used
+  fallback_models:
+    - google/gemini-2.5-flash
+    - openai/gpt-5
+    - anthropic/claude-sonnet-4-5-20250929
+
+  # API keys (can also use environment variables)
+  # OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY
+  openai_api_key: ""
+  anthropic_api_key: ""
+  gemini_api_key: ""
+
+  # Request settings
+  timeout_s: 30
+  max_tokens: 4096
+  temperature: 0.3  # Lower = more deterministic analysis
+
+  # Stuck detection
+  max_retries: 3
+  stuck_timeout_s: 45
+
+  # System prompts (customize as needed)
+  # triage_system_prompt: "Custom triage prompt..."
+  # analysis_system_prompt: "Custom analysis prompt..."
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Automated Actions
+# ─────────────────────────────────────────────────────────────────────────────
+actions:
+  # What automated actions are allowed
+  allow_restart: true
+  allow_redeploy: false  # Requires manual approval
+
+  # Safety limits
+  max_restarts_per_hour: 3
+  cooldown_minutes: 10
+
+  # Actions requiring human approval
+  require_approval_for:
+    - redeploy
+    - terminate
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Notifications
+# ─────────────────────────────────────────────────────────────────────────────
+notifications:
+  # Email via AWS SES
+  email:
+    enabled: false
+    from: monitor@yourdomain.com
+    recipients:
+      - admin@yourdomain.com
+
+  # Slack webhook
+  slack:
+    enabled: false
+    webhook_url: ""
+
+  # Discord webhook
+  discord:
+    enabled: false
+    webhook_url: ""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Logging
+# ─────────────────────────────────────────────────────────────────────────────
+logging:
+  log_dir: Logs
+  log_level: INFO  # DEBUG, INFO, WARNING, ERROR
+  log_max_bytes: 10000000  # 10MB
+  log_backup_count: 5
+  log_llm_interactions: true  # Log all LLM requests/responses

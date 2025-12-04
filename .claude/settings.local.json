@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(aws ec2 describe-images:*)",
+      "Bash(aws ec2 create-security-group:*)",
+      "Bash(aws ec2 authorize-security-group-ingress:*)",
+      "Bash(aws ec2 wait:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

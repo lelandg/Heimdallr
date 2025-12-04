@@ -1,0 +1,40 @@
+[Unit]
+Description=AWS Monitor - LLM-powered service monitoring
+Documentation=https://github.com/your-repo/monitor
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/monitor
+
+# Environment
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=-/opt/monitor/.env
+
+# Start command
+ExecStart=/opt/monitor/.venv/bin/python main.py
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=aws-monitor
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/monitor/Logs
+
+# Resource limits
+MemoryMax=1G
+CPUQuota=80%
+
+[Install]
+WantedBy=multi-user.target
