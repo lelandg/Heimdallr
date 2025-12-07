@@ -1,15 +1,17 @@
-# AWS Monitor - Project Configuration
+# Heimdallr - Project Configuration
 
 *For Claude Code / AI-assisted development*
 
 ## Project Overview
 
-AWS Monitor is an open-source Python server that monitors AWS Amplify and EC2 services, using LLM analysis to diagnose issues and automate remediation.
+Heimdallr is an open-source Python server that monitors cloud services, databases, and Linux infrastructure, using LLM analysis to diagnose issues and automate remediation.
+
+> **Name Origin:** Named after the all-seeing Norse god Heimdallr who guards the Bifrost bridge. We use the Old Norse spelling to distinguish from other projects.
 
 ## Project Structure
 
 ```
-Monitor/
+heimdallr/
 ├── app/                    # Main application code
 │   ├── __init__.py
 │   ├── config.py          # Configuration management
@@ -136,31 +138,31 @@ Environment variables override config.yaml:
 
 ```bash
 # Set environment variables for scripts
-export MONITOR_EC2_HOST=ubuntu@your-instance-ip
-export MONITOR_SSH_KEY=$HOME/.ssh/your-key.pem
-export MONITOR_INSTANCE_ID=i-your-instance-id
+export HEIMDALLR_EC2_HOST=ubuntu@your-instance-ip
+export HEIMDALLR_SSH_KEY=$HOME/.ssh/your-key.pem
+export HEIMDALLR_INSTANCE_ID=i-your-instance-id
 
 # Use helper scripts
-./Scripts/monitor-deploy.sh --restart
-./Scripts/monitor-logs.sh
-./Scripts/monitor-status.sh
+./Scripts/heimdallr-deploy.sh --restart
+./Scripts/heimdallr-logs.sh
+./Scripts/heimdallr-status.sh
 ```
 
 ### systemd Service
 
 ```bash
-sudo cp Scripts/monitor.service /etc/systemd/system/aws-monitor.service
+sudo cp Scripts/heimdallr.service /etc/systemd/system/heimdallr.service
 sudo systemctl daemon-reload
-sudo systemctl enable aws-monitor
-sudo systemctl start aws-monitor
+sudo systemctl enable heimdallr
+sudo systemctl start heimdallr
 ```
 
 ## Logging
 
-- Application logs: `Logs/monitor.log`
+- Application logs: `Logs/heimdallr.log`
 - LLM interaction logs: `Logs/llm_interactions.log`
 - Audit logs: `Logs/audit.log`
 
 ## Plan File
 
-Implementation plan: `Plans/AWS-Monitor-Implementation-Plan.md`
+Implementation plan: `Plans/Heimdallr-Implementation-Plan.md`

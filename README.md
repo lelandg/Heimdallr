@@ -1,28 +1,35 @@
-# AWS Log and EC2 Service Monitor
+# Heimdallr
 
 [![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
 
-**LLM-powered monitoring and automated remediation for AWS services**
+<p align="center">
+  <img src="logo.png" alt="Heimdallr Logo" width="100%">
+</p>
 
-AWS Monitor watches your AWS Amplify applications and EC2 instances, using AI to analyze errors and automatically fix common issues.
+**AI-Powered Eyes on Your Stack**
 
-- **Released by Chameleon Labs, LLC https://chameleonlabs.ai**
+Heimdallr watches your cloud services, databases, and Linux infrastructure, using AI to analyze errors and automatically fix common issues.
+
+> **Why "Heimdallr"?** In Norse mythology, Heimdallr is the all-seeing guardian of the Bifrost bridge, blessed with extraordinary perception - he can see for hundreds of miles and hear grass growing. We use the Old Norse spelling (*Heimdallr* rather than the anglicized *Heimdall*) to distinguish this project and honor the original mythology. Like its namesake, this tool maintains constant vigilance over your infrastructure, seeing problems before they become crises.
+
+---
+
+- **Released by [Chameleon Labs, LLC](https://chameleonlabs.ai)**
 - Written by **Leland Green** and **Claude Code**
-- **Other free code** on GitHub and **https://lelandgreen.com**
-- **Discord server: https://discord.gg/chameleonlabs**
-  - Free AI Chatbot with ChatGPT, Gemini, and Claude personalities
-  - Chat with multiple LLMs at once in **#multi-bot** channel
+- **More free code** on [GitHub](https://github.com/ChameleonLabsLLC) and [lelandgreen.com](https://lelandgreen.com)
+- **[Discord Community](https://discord.gg/chameleonlabs)** - Free AI chatbots, coding help, and more
 
 ## Features
 
-- **Real-time Log Monitoring** - Polls CloudWatch logs for errors
-- **LLM-Powered Analysis** - Uses GPT-5, Claude, or Gemini to diagnose issues
-- **Automated Remediation** - Restarts services, triggers redeployments
+- **Real-time Log Monitoring** - Polls CloudWatch, systemd journals, and database logs
+- **LLM-Powered Analysis** - Uses GPT-5, Claude, or Gemini to diagnose root causes
+- **Automated Remediation** - Restarts services, triggers redeployments, executes runbooks
 - **Multi-Provider LLM Support** - OpenAI, Anthropic, Google with automatic fallback
+- **Broad Infrastructure Support** - AWS Amplify, EC2, databases, Linux services
 - **Configuration Management** - CLI tools for easy service setup
-- **Service Discovery** - Auto-detect Amplify apps and EC2 instances from AWS
+- **Service Discovery** - Auto-detect services from AWS and local system
 - **Safety Guards** - Rate limiting, cooldowns, and approval workflows
 - **Notifications** - Email (SES), Slack, Discord alerts
 - **Audit Trail** - Complete logging of all automated actions
@@ -32,16 +39,15 @@ AWS Monitor watches your AWS Amplify applications and EC2 instances, using AI to
 ### Prerequisites
 
 - Python 3.11+
-- AWS account with Amplify apps or EC2 instances
+- AWS account (for cloud monitoring) or Linux server (for local monitoring)
 - API key for at least one LLM provider (OpenAI, Anthropic, or Google)
-- AWS CLI configured with appropriate permissions
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/ChameleonLabsLLC/aws-monitor.git
-cd aws-monitor
+git clone https://github.com/ChameleonLabsLLC/heimdallr.git
+cd heimdallr
 
 # Create virtual environment
 python3 -m venv .venv
@@ -60,22 +66,22 @@ Use the configuration management scripts to set up your services:
 
 ```bash
 # Discover available services in your AWS account
-./Scripts/monitor-discover.sh
+./Scripts/heimdallr-discover.sh
 
 # Add services to monitor
-./Scripts/monitor-config.sh add amplify <app-id> "My App"
-./Scripts/monitor-config.sh add ec2 <instance-id> "Web Server"
+./Scripts/heimdallr-config.sh add amplify <app-id> "My App"
+./Scripts/heimdallr-config.sh add ec2 <instance-id> "Web Server"
 
 # Set polling intervals (recommended values)
-./Scripts/monitor-config.sh interval log 120      # 2 minutes
-./Scripts/monitor-config.sh interval health 300   # 5 minutes
-./Scripts/monitor-config.sh interval lookback 15  # 15 minutes
+./Scripts/heimdallr-config.sh interval log 120      # 2 minutes
+./Scripts/heimdallr-config.sh interval health 300   # 5 minutes
+./Scripts/heimdallr-config.sh interval lookback 15  # 15 minutes
 
 # Validate configuration
-./Scripts/monitor-validate.sh
+./Scripts/heimdallr-validate.sh
 
 # View configured services
-./Scripts/monitor-config.sh list
+./Scripts/heimdallr-config.sh list
 ```
 
 ### Set API Keys
@@ -94,54 +100,54 @@ python main.py
 
 ## Configuration Management
 
-### monitor-config.sh
+### heimdallr-config.sh
 
 Manage monitored services and polling intervals:
 
 ```bash
 # List all configured services and settings
-./Scripts/monitor-config.sh list
+./Scripts/heimdallr-config.sh list
 
 # Show full configuration
-./Scripts/monitor-config.sh show
+./Scripts/heimdallr-config.sh show
 
 # Add services
-./Scripts/monitor-config.sh add amplify <app-id> "App Name"
-./Scripts/monitor-config.sh add ec2 <instance-id> "Server Name" [nginx,node]
+./Scripts/heimdallr-config.sh add amplify <app-id> "App Name"
+./Scripts/heimdallr-config.sh add ec2 <instance-id> "Server Name" [nginx,node]
 
 # Remove services
-./Scripts/monitor-config.sh remove amplify <app-id>
-./Scripts/monitor-config.sh remove ec2 <instance-id>
+./Scripts/heimdallr-config.sh remove amplify <app-id>
+./Scripts/heimdallr-config.sh remove ec2 <instance-id>
 
 # Set polling intervals
-./Scripts/monitor-config.sh interval log <seconds>       # Log polling (default: 60)
-./Scripts/monitor-config.sh interval health <seconds>    # Health checks (default: 300)
-./Scripts/monitor-config.sh interval lookback <minutes>  # Error lookback (default: 15)
+./Scripts/heimdallr-config.sh interval log <seconds>       # Log polling (default: 60)
+./Scripts/heimdallr-config.sh interval health <seconds>    # Health checks (default: 300)
+./Scripts/heimdallr-config.sh interval lookback <minutes>  # Error lookback (default: 15)
 ```
 
-### monitor-discover.sh
+### heimdallr-discover.sh
 
 Auto-discover services from your AWS account:
 
 ```bash
 # Discover all Amplify apps and EC2 instances
-./Scripts/monitor-discover.sh
+./Scripts/heimdallr-discover.sh
 
 # Discover specific service types
-./Scripts/monitor-discover.sh amplify
-./Scripts/monitor-discover.sh ec2
-./Scripts/monitor-discover.sh logs
+./Scripts/heimdallr-discover.sh amplify
+./Scripts/heimdallr-discover.sh ec2
+./Scripts/heimdallr-discover.sh logs
 
 # Scan a different region
-AWS_REGION=us-west-2 ./Scripts/monitor-discover.sh
+AWS_REGION=us-west-2 ./Scripts/heimdallr-discover.sh
 ```
 
-### monitor-validate.sh
+### heimdallr-validate.sh
 
-Validate configuration and test AWS connectivity:
+Validate configuration and test connectivity:
 
 ```bash
-./Scripts/monitor-validate.sh
+./Scripts/heimdallr-validate.sh
 ```
 
 Checks:
@@ -166,15 +172,16 @@ Checks:
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  CloudWatch     │────▶│  Log Collector   │────▶│  Error Analyzer │
-│  Logs           │     │  (polling)       │     │  (LLM-powered)  │
-└─────────────────┘     └──────────────────┘     └────────┬────────┘
+│  Log Sources    │────▶│  Log Collector   │────▶│  Error Analyzer │
+│  (CloudWatch,   │     │  (polling)       │     │  (LLM-powered)  │
+│   journald, DB) │     └──────────────────┘     └────────┬────────┘
+└─────────────────┘                                       │
                                                           │
 ┌─────────────────┐     ┌──────────────────┐              │
-│  Amplify/EC2    │◀────│  Action Executor │◀─────────────┤
-│  Services       │     │  (remediation)   │              │
-└─────────────────┘     └──────────────────┘              │
-                                                          │
+│  Services       │◀────│  Action Executor │◀─────────────┤
+│  (AWS, Linux,   │     │  (remediation)   │              │
+│   Databases)    │     └──────────────────┘              │
+└─────────────────┘                                       │
                         ┌──────────────────┐              │
                         │  Safety Guard    │◀─────────────┤
                         │  (rate limiting) │              │
@@ -188,7 +195,7 @@ Checks:
 
 ## LLM Providers
 
-AWS Monitor supports multiple LLM providers with automatic fallback:
+Heimdallr supports multiple LLM providers with automatic fallback:
 
 | Provider | Models | Best For |
 |----------|--------|----------|
@@ -218,8 +225,8 @@ llm:
 ```bash
 # On EC2 instance
 cd /opt
-sudo git clone https://github.com/ChameleonLabsLLC/aws-monitor.git monitor
-cd monitor
+sudo git clone https://github.com/ChameleonLabsLLC/heimdallr.git
+cd heimdallr
 sudo ./Scripts/deploy.sh
 ```
 
@@ -256,42 +263,42 @@ sudo ./Scripts/deploy.sh
 Configure environment variables for remote management:
 
 ```bash
-export MONITOR_EC2_HOST=ubuntu@<your-instance-ip>
-export MONITOR_SSH_KEY=$HOME/.ssh/<your-key>.pem
-export MONITOR_INSTANCE_ID=i-<your-instance-id>
+export HEIMDALLR_EC2_HOST=ubuntu@<your-instance-ip>
+export HEIMDALLR_SSH_KEY=$HOME/.ssh/<your-key>.pem
+export HEIMDALLR_INSTANCE_ID=i-<your-instance-id>
 ```
 
 Available scripts:
 
 | Script | Description |
 |--------|-------------|
-| `monitor-deploy.sh` | Deploy code and restart service |
-| `monitor-logs.sh` | View live service logs |
-| `monitor-status.sh` | Check service and instance status |
-| `monitor-ctl.sh` | Service control (start/stop/restart) |
-| `monitor-ssh.sh` | SSH into the monitor instance |
+| `heimdallr-deploy.sh` | Deploy code and restart service |
+| `heimdallr-logs.sh` | View live service logs |
+| `heimdallr-status.sh` | Check service and instance status |
+| `heimdallr-ctl.sh` | Service control (start/stop/restart) |
+| `heimdallr-ssh.sh` | SSH into the monitor instance |
 
 Example:
 
 ```bash
-./Scripts/monitor-deploy.sh --restart  # Deploy and restart
-./Scripts/monitor-logs.sh              # View live logs
-./Scripts/monitor-status.sh            # Check status
-./Scripts/monitor-ctl.sh restart       # Restart service
+./Scripts/heimdallr-deploy.sh --restart  # Deploy and restart
+./Scripts/heimdallr-logs.sh              # View live logs
+./Scripts/heimdallr-status.sh            # Check status
+./Scripts/heimdallr-ctl.sh restart       # Restart service
 ```
 
 ### systemd Service
 
 ```bash
-sudo cp Scripts/monitor.service /etc/systemd/system/aws-monitor.service
+sudo cp Scripts/heimdallr.service /etc/systemd/system/heimdallr.service
 sudo systemctl daemon-reload
-sudo systemctl enable aws-monitor
-sudo systemctl start aws-monitor
+sudo systemctl enable heimdallr
+sudo systemctl start heimdallr
 ```
 
 ## Safety Features
 
-AWS Monitor includes multiple safety mechanisms:
+Heimdallr includes multiple safety mechanisms:
 
 - **Rate Limiting** - Max restarts per hour per service
 - **Cooldown Periods** - Minimum time between actions
@@ -320,12 +327,12 @@ actions:
 ## Project Structure
 
 ```
-aws-monitor/
+heimdallr/
 ├── app/                    # Main application code
 │   ├── config.py          # Configuration management
 │   ├── llm_client.py      # LiteLLM wrapper
 │   ├── aws_client.py      # AWS service integration
-│   ├── log_collector.py   # CloudWatch log streaming
+│   ├── log_collector.py   # Log streaming
 │   ├── service_monitor.py # Health monitoring
 │   ├── error_analyzer.py  # LLM-powered analysis
 │   ├── action_executor.py # Remediation actions
@@ -333,13 +340,13 @@ aws-monitor/
 │   ├── notifier.py        # Alert notifications
 │   └── prompts/           # LLM prompt templates
 ├── Scripts/               # Management scripts
-│   ├── monitor-config.sh  # Configuration management
-│   ├── monitor-discover.sh # Service discovery
-│   ├── monitor-validate.sh # Config validation
-│   ├── monitor-deploy.sh  # Deployment
-│   ├── monitor-ctl.sh     # Service control
-│   ├── monitor-logs.sh    # Log viewing
-│   └── monitor-status.sh  # Status checking
+│   ├── heimdallr-config.sh   # Configuration management
+│   ├── heimdallr-discover.sh # Service discovery
+│   ├── heimdallr-validate.sh # Config validation
+│   ├── heimdallr-deploy.sh   # Deployment
+│   ├── heimdallr-ctl.sh      # Service control
+│   ├── heimdallr-logs.sh     # Log viewing
+│   └── heimdallr-status.sh   # Status checking
 ├── Docs/                  # Documentation
 ├── tests/                 # Test suite
 ├── main.py               # Application entry point
@@ -377,6 +384,6 @@ Contributions welcome! Please:
 
 ## Support
 
-- [GitHub Issues](https://github.com/ChameleonLabsLLC/aws-monitor/issues)
+- [GitHub Issues](https://github.com/ChameleonLabsLLC/heimdallr/issues)
 - [Documentation](./Docs/)
 - [Discord](https://discord.gg/chameleonlabs)

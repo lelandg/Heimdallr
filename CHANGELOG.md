@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to AWS Monitor will be documented in this file.
+All notable changes to Heimdallr will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -9,17 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Project Rebrand to Heimdallr**
+  - Named after the all-seeing Norse god who guards the Bifrost
+  - Old Norse spelling (*Heimdallr*) distinguishes from other projects
+  - New tagline: "AI-Powered Eyes on Your Stack"
+
 - **Configuration Management Scripts**
-  - `monitor-config.sh` - Manage monitored services and polling intervals via CLI
+  - `heimdallr-config.sh` - Manage monitored services and polling intervals via CLI
     - Add/remove Amplify apps and EC2 instances
     - Set polling intervals (log, health, lookback)
     - List and show configuration
-  - `monitor-discover.sh` - Auto-discover AWS resources
+  - `heimdallr-discover.sh` - Auto-discover AWS resources
     - Scan for Amplify applications
     - Scan for EC2 instances
     - List CloudWatch log groups
     - Region-aware scanning
-  - `monitor-validate.sh` - Validate configuration and connectivity
+  - `heimdallr-validate.sh` - Validate configuration and connectivity
     - Check YAML syntax
     - Verify AWS credentials
     - Test access to configured services
@@ -32,20 +37,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Error lookback window: 15 minutes (was 5 minutes)
 
 - **Documentation**
-  - Comprehensive README with all features documented
+  - Comprehensive README with mythology explanation
   - Configuration management section
   - Recommended settings table
   - Project structure overview
 
 ### Changed
 
+- Renamed project from "AWS Monitor" to "Heimdallr"
+- Renamed all scripts from `monitor-*` to `heimdallr-*`
+- Updated environment variables from `MONITOR_*` to `HEIMDALLR_*`
 - Updated `config.example.yaml` with recommended interval defaults
-- Improved README organization and clarity
-- Added version badges to README
-
-### Fixed
-
-- Script compatibility with various shell environments
+- Expanded scope to include databases and Linux services (not just AWS)
 
 ## [0.1.0] - 2025-12-06
 
@@ -86,11 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Deployment Tools**
   - `deploy.sh` - Initial deployment script
   - `setup-ec2.sh` - EC2 instance setup
-  - `monitor-deploy.sh` - Code deployment
-  - `monitor-ctl.sh` - Service control
-  - `monitor-logs.sh` - Log viewing
-  - `monitor-status.sh` - Status checking
-  - `monitor-ssh.sh` - SSH access
+  - Remote management scripts
   - systemd service configuration
 
 - **Configuration**
@@ -115,5 +114,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
-| 0.2.0 | 2025-12-07 | Configuration management scripts |
-| 0.1.0 | 2025-12-06 | Initial release |
+| 0.2.0 | 2025-12-07 | Rebrand to Heimdallr, configuration management scripts |
+| 0.1.0 | 2025-12-06 | Initial release as "AWS Monitor" |
