@@ -64,7 +64,7 @@ for app_id, name, domain in apps:
     print(f'    App ID:    {app_id}')
     print(f'    Domain:    {domain}')
     print(f'    Log Group: /aws/amplify/{app_id}')
-    print(f'    Add cmd:   ./monitor-config.sh add amplify {app_id} \"{name}\"')
+    print(f'    Add cmd:   ./heimdallr-config.sh add amplify {app_id} \"{name}\"')
     print()
 "
 }
@@ -101,7 +101,7 @@ for res in reservations:
         print(f'    Instance ID: {inst_id}')
         print(f'    Type:        {inst_type}')
         print(f'    IP:          {ip}')
-        print(f'    Add cmd:     ./monitor-config.sh add ec2 {inst_id} \"{name}\"')
+        print(f'    Add cmd:     ./heimdallr-config.sh add ec2 {inst_id} \"{name}\"')
         print()
 "
 }

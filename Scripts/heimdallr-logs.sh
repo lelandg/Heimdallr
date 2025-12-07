@@ -70,9 +70,9 @@ done
 
 if [[ "$LOG_TYPE" == "llm" ]]; then
     if [[ "$FOLLOW" == "true" ]]; then
-        ssh -i "$SSH_KEY" "$EC2_HOST" "tail -f /home/ubuntu/monitor/Logs/llm_interactions.log"
+        ssh -i "$SSH_KEY" "$EC2_HOST" "tail -f /home/ubuntu/heimdallr/Logs/llm_interactions.log"
     else
-        ssh -i "$SSH_KEY" "$EC2_HOST" "tail -n $LINES /home/ubuntu/monitor/Logs/llm_interactions.log"
+        ssh -i "$SSH_KEY" "$EC2_HOST" "tail -n $LINES /home/ubuntu/heimdallr/Logs/llm_interactions.log"
     fi
 else
     if [[ "$FOLLOW" == "true" ]]; then

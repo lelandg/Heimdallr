@@ -1,16 +1,16 @@
 #!/bin/bash
-# AWS Monitor - EC2 Instance Setup Script
+# Heimdallr - EC2 Instance Setup Script
 # Run this ONCE on a fresh Ubuntu EC2 instance to prepare for deployment
 
 set -e
 
 # Configuration
-APP_DIR="/opt/monitor"
+APP_DIR="/opt/heimdallr"
 USER="ubuntu"
 PYTHON_VERSION="3.11"
 
 echo "=========================================="
-echo "AWS Monitor - EC2 Setup"
+echo "Heimdallr - EC2 Setup"
 echo "=========================================="
 echo ""
 
@@ -64,8 +64,8 @@ if command -v ufw &> /dev/null; then
 fi
 
 echo "[7/8] Creating log rotation config..."
-cat > /etc/logrotate.d/aws-monitor << 'EOF'
-/opt/monitor/Logs/*.log {
+cat > /etc/logrotate.d/heimdallr << 'EOF'
+/opt/heimdallr/Logs/*.log {
     daily
     missingok
     rotate 14
@@ -75,7 +75,7 @@ cat > /etc/logrotate.d/aws-monitor << 'EOF'
     create 640 ubuntu ubuntu
     sharedscripts
     postrotate
-        systemctl reload aws-monitor > /dev/null 2>&1 || true
+        systemctl reload heimdallr > /dev/null 2>&1 || true
     endscript
 }
 EOF
@@ -89,7 +89,7 @@ EOF
 
 # Optimize network settings for monitoring
 cat >> /etc/sysctl.conf << 'EOF'
-# AWS Monitor optimizations
+# Heimdallr optimizations
 net.core.somaxconn = 1024
 net.ipv4.tcp_max_syn_backlog = 1024
 EOF
@@ -103,14 +103,14 @@ echo ""
 echo "Next steps:"
 echo ""
 echo "1. Clone the repository:"
-echo "   cd /opt && sudo git clone <your-repo-url> monitor"
+echo "   cd /opt && sudo git clone <your-repo-url> heimdallr"
 echo ""
 echo "2. Create configuration file:"
-echo "   sudo cp /opt/monitor/config.example.yaml /opt/monitor/config.yaml"
-echo "   sudo nano /opt/monitor/config.yaml"
+echo "   sudo cp /opt/heimdallr/config.example.yaml /opt/heimdallr/config.yaml"
+echo "   sudo nano /opt/heimdallr/config.yaml"
 echo ""
 echo "3. Create .env file with API keys:"
-echo "   sudo nano /opt/monitor/.env"
+echo "   sudo nano /opt/heimdallr/.env"
 echo "   # Add: OPENAI_API_KEY=sk-..."
 echo "   # Add: ANTHROPIC_API_KEY=sk-ant-..."
 echo ""
@@ -118,9 +118,9 @@ echo "4. Configure AWS credentials (if not using IAM role):"
 echo "   aws configure"
 echo ""
 echo "5. Run deployment:"
-echo "   sudo /opt/monitor/Scripts/deploy.sh"
+echo "   sudo /opt/heimdallr/Scripts/deploy.sh"
 echo ""
 echo "6. Verify service is running:"
-echo "   systemctl status aws-monitor"
+echo "   systemctl status heimdallr"
 echo "   curl http://localhost:8000/health"
 echo ""

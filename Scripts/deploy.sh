@@ -1,17 +1,17 @@
 #!/bin/bash
-# AWS Monitor Deployment Script
+# Heimdallr Deployment Script
 # Run this on the EC2 instance after initial setup
 
 set -e
 
 # Configuration
-APP_DIR="/opt/monitor"
+APP_DIR="/opt/heimdallr"
 VENV_DIR="$APP_DIR/.venv"
-SERVICE_NAME="aws-monitor"
+SERVICE_NAME="heimdallr"
 USER="ubuntu"
 
 echo "=========================================="
-echo "AWS Monitor Deployment"
+echo "Heimdallr Deployment"
 echo "=========================================="
 
 # Check if running as root
@@ -43,7 +43,7 @@ mkdir -p Logs
 chown -R $USER:$USER Logs
 
 echo "[5/6] Installing systemd service..."
-cp Scripts/monitor.service /etc/systemd/system/$SERVICE_NAME.service
+cp Scripts/heimdallr.service /etc/systemd/system/$SERVICE_NAME.service
 systemctl daemon-reload
 systemctl enable $SERVICE_NAME
 

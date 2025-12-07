@@ -1,19 +1,19 @@
 #!/bin/bash
 # Deploy Heimdallr to EC2 instance
-# Usage: ./monitor-deploy.sh [--restart]
+# Usage: ./heimdallr-deploy.sh [--restart]
 #
 # Configuration: Set these environment variables or edit the defaults below:
 #   HEIMDALLR_EC2_HOST  - EC2 user@ip (e.g., ubuntu@198.51.100.1)
 #   HEIMDALLR_SSH_KEY   - Path to SSH private key
-#   MONITOR_LOCAL_PATH - Local path to Monitor repo
-#   MONITOR_REMOTE_PATH - Remote path on EC2
+#   HEIMDALLR_LOCAL_PATH - Local path to Heimdallr repo
+#   HEIMDALLR_REMOTE_PATH - Remote path on EC2
 
 set -e
 
 EC2_HOST="${HEIMDALLR_EC2_HOST:-ubuntu@your-instance-ip}"
 SSH_KEY="${HEIMDALLR_SSH_KEY:-$HOME/.ssh/heimdallr-key.pem}"
-LOCAL_PATH="${MONITOR_LOCAL_PATH:-$(dirname "$(dirname "$(realpath "$0")")")/}"
-REMOTE_PATH="${MONITOR_REMOTE_PATH:-/home/ubuntu/monitor/}"
+LOCAL_PATH="${HEIMDALLR_LOCAL_PATH:-$(dirname "$(dirname "$(realpath "$0")")")/}"
+REMOTE_PATH="${HEIMDALLR_REMOTE_PATH:-/home/ubuntu/heimdallr/}"
 SERVICE="heimdallr"
 
 if [[ "$EC2_HOST" == *"your-instance-ip"* ]]; then
@@ -91,8 +91,8 @@ else
     echo "=========================================="
     echo ""
     echo "To restart manually:"
-    echo "  ./monitor-ssh.sh 'sudo systemctl restart heimdallr'"
+    echo "  ./heimdallr-ssh.sh 'sudo systemctl restart heimdallr'"
 fi
 
 echo ""
-echo "View logs: ./monitor-logs.sh"
+echo "View logs: ./heimdallr-logs.sh"
