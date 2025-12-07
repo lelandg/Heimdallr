@@ -34,10 +34,11 @@ monitoring:
   #     - nginx
   #     - node
 
-  # Polling intervals (seconds)
-  log_poll_interval: 30
-  health_check_interval: 60
-  error_lookback_minutes: 5
+  # Polling intervals
+  # Tip: Use ./Scripts/monitor-config.sh interval <type> <value> to change these
+  log_poll_interval: 60          # Seconds between log checks (recommended: 60-120)
+  health_check_interval: 300     # Seconds between health checks (recommended: 300)
+  error_lookback_minutes: 15     # Minutes to look back for errors (recommended: 10-15)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # LLM Configuration
