@@ -21,6 +21,7 @@ import aiohttp
 from app.config import NotificationSettings
 from app.alert_manager import Alert, AlertPriority
 from app.service_monitor import HealthChange, HealthState
+from app.chatmaster_client import ChatMasterClient
 
 log = logging.getLogger("monitor.notifier")
 
@@ -30,6 +31,7 @@ class NotificationChannel(Enum):
     EMAIL = "email"
     SLACK = "slack"
     DISCORD = "discord"
+    CHATMASTER = "chatmaster"
 
 
 class NotificationPriority(Enum):
@@ -142,6 +144,9 @@ class Notifier:
         self.settings = settings
         self._http_session: Optional[aiohttp.ClientSession] = None
 
+        # ChatMaster client
+        self._chatmaster = ChatMasterClient(settings.chatmaster)
+
         # Rate limiting
         self._sent_count: Dict[str, int] = {}  # channel -> count
         self._last_reset = datetime.now(timezone.utc)
@@ -158,9 +163,10 @@ class Notifier:
         return self._http_session
 
     async def close(self) -> None:
-        """Close HTTP session."""
+        """Close HTTP session and ChatMaster client."""
         if self._http_session and not self._http_session.closed:
             await self._http_session.close()
+        await self._chatmaster.close()
 
     async def send_notification(self, notification: Notification) -> Dict[str, bool]:
         """Send notification to all specified channels.
@@ -187,6 +193,8 @@ class Notifier:
                     success = await self._send_slack(notification)
                 elif channel == NotificationChannel.DISCORD:
                     success = await self._send_discord(notification)
+                elif channel == NotificationChannel.CHATMASTER:
+                    success = await self._send_chatmaster(notification)
                 else:
                     success = False
 
@@ -297,6 +305,41 @@ class Notifier:
             log.error(f"Discord notification failed: {e}")
             return False
 
+    async def _send_chatmaster(self, notification: Notification) -> bool:
+        """Send notification via ChatMaster API (Discord DM)."""
+        if not self._chatmaster.is_configured:
+            return False
+
+        # Map NotificationPriority to alert priority string
+        priority_map = {
+            NotificationPriority.CRITICAL: "P1",
+            NotificationPriority.HIGH: "P2",
+            NotificationPriority.NORMAL: "P3",
+            NotificationPriority.LOW: "P4",
+        }
+        priority = priority_map.get(notification.priority, "P3")
+
+        # Check routing
+        if not self._chatmaster.should_send_for_priority(priority):
+            log.debug(f"ChatMaster: Skipping {priority} alert (routing disabled)")
+            return False
+
+        if not self._chatmaster.should_send_for_service(notification.service):
+            log.debug(f"ChatMaster: Skipping alert for {notification.service} (not in service filter)")
+            return False
+
+        try:
+            return await self._chatmaster.send_alert(
+                service=notification.service,
+                priority=priority,
+                title=notification.title,
+                message=notification.message,
+                details=notification.details,
+            )
+        except Exception as e:
+            log.error(f"ChatMaster notification failed: {e}")
+            return False
+
     def _check_rate_limit(self, channel: NotificationChannel) -> bool:
         """Check if under rate limit for channel."""
         # Reset counts hourly
@@ -348,6 +391,10 @@ class Notifier:
             if self.settings.discord_enabled:
                 channels.append(NotificationChannel.DISCORD)
 
+        # ChatMaster handles its own priority routing internally
+        if self._chatmaster.is_configured:
+            channels.append(NotificationChannel.CHATMASTER)
+
         notification = Notification(
             title=alert.title,
             message=alert.message,
@@ -381,6 +428,10 @@ class Notifier:
             if self.settings.slack_enabled:
                 channels.append(NotificationChannel.SLACK)
 
+        # ChatMaster for health changes (if routing enabled)
+        if self._chatmaster.is_configured and self.settings.chatmaster.routing.health_changes:
+            channels.append(NotificationChannel.CHATMASTER)
+
         notification = Notification(
             title=f"Service Health: {change.service_name}",
             message=f"State changed: {change.old_state.value} → {change.new_state.value}\n{change.message}",
@@ -410,6 +461,10 @@ class Notifier:
         if self.settings.email_enabled:
             channels.append(NotificationChannel.EMAIL)
 
+        # ChatMaster for action results (if routing enabled)
+        if self._chatmaster.is_configured and self.settings.chatmaster.routing.action_results:
+            channels.append(NotificationChannel.CHATMASTER)
+
         notification = Notification(
             title=f"Action {'Completed' if success else 'Failed'}: {action_type}",
             message=message,
@@ -430,6 +485,7 @@ class Notifier:
             "email_enabled": self.settings.email_enabled,
             "slack_enabled": self.settings.slack_enabled,
             "discord_enabled": self.settings.discord_enabled,
+            "chatmaster_enabled": self._chatmaster.is_configured,
             "sent_this_hour": dict(self._sent_count),
             "rate_limit_per_hour": self._rate_limit_per_hour,
             "total_sent": len(self._history),

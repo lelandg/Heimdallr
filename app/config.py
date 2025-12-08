@@ -108,6 +108,27 @@ class ActionSettings:
 
 
 @dataclass
+class ChatMasterRouting:
+    """ChatMaster alert routing configuration."""
+    p1_alerts: bool = True
+    p2_alerts: bool = True
+    p3_alerts: bool = False
+    health_changes: bool = True
+    action_results: bool = False
+
+
+@dataclass
+class ChatMasterSettings:
+    """ChatMaster API configuration for Discord DM alerts."""
+    enabled: bool = False
+    api_url: str = ""
+    api_key: str = ""
+    api_secret: str = ""
+    routing: ChatMasterRouting = field(default_factory=ChatMasterRouting)
+    services: list[str] = field(default_factory=list)  # Empty = all services
+
+
+@dataclass
 class NotificationSettings:
     """Notification channel configuration."""
     # Email via SES
@@ -123,6 +144,9 @@ class NotificationSettings:
     discord_enabled: bool = False
     discord_webhook_url: str = ""
 
+    # ChatMaster API (Discord DMs)
+    chatmaster: ChatMasterSettings = field(default_factory=ChatMasterSettings)
+
 
 @dataclass
 class LoggingSettings:
@@ -132,6 +156,30 @@ class LoggingSettings:
     log_max_bytes: int = 10_000_000  # 10MB
     log_backup_count: int = 5
     log_llm_interactions: bool = True
+
+
+def _parse_chatmaster_settings(data: dict) -> ChatMasterSettings:
+    """Parse ChatMaster settings from config data."""
+    if not data:
+        return ChatMasterSettings()
+
+    routing_data = data.get("routing", {})
+    routing = ChatMasterRouting(
+        p1_alerts=bool(routing_data.get("p1_alerts", True)),
+        p2_alerts=bool(routing_data.get("p2_alerts", True)),
+        p3_alerts=bool(routing_data.get("p3_alerts", False)),
+        health_changes=bool(routing_data.get("health_changes", True)),
+        action_results=bool(routing_data.get("action_results", False)),
+    )
+
+    return ChatMasterSettings(
+        enabled=bool(data.get("enabled", False)),
+        api_url=os.environ.get("CHATMASTER_API_URL", str(data.get("api_url", ""))),
+        api_key=os.environ.get("CHATMASTER_API_KEY", str(data.get("api_key", ""))),
+        api_secret=os.environ.get("CHATMASTER_API_SECRET", str(data.get("api_secret", ""))),
+        routing=routing,
+        services=data.get("services", []),
+    )
 
 
 @dataclass
@@ -239,6 +287,7 @@ class AppConfig:
                 slack_webhook_url=str(notif_data.get("slack", {}).get("webhook_url", "")),
                 discord_enabled=bool(notif_data.get("discord", {}).get("enabled", False)),
                 discord_webhook_url=str(notif_data.get("discord", {}).get("webhook_url", "")),
+                chatmaster=_parse_chatmaster_settings(notif_data.get("chatmaster", {})),
             ),
             logging=LoggingSettings(
                 log_dir=str(log_data.get("log_dir", "Logs")),

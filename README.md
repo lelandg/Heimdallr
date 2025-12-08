@@ -31,7 +31,7 @@ Heimdallr watches your cloud services, databases, and Linux infrastructure, usin
 - **Configuration Management** - CLI tools for easy service setup
 - **Service Discovery** - Auto-detect services from AWS and local system
 - **Safety Guards** - Rate limiting, cooldowns, and approval workflows
-- **Notifications** - Email (SES), Slack, Discord alerts
+- **Notifications** - Email (SES), Slack, Discord webhooks, ChatMaster DMs
 - **Audit Trail** - Complete logging of all automated actions
 
 ## Quick Start
@@ -295,6 +295,45 @@ sudo systemctl daemon-reload
 sudo systemctl enable heimdallr
 sudo systemctl start heimdallr
 ```
+
+## Notifications
+
+### Channels
+
+| Channel | Type | Best For |
+|---------|------|----------|
+| Email (SES) | AWS Simple Email Service | Formal alerts, audit trail |
+| Slack | Webhook | Team channels |
+| Discord Webhook | Webhook | Server channels |
+| ChatMaster | API | Personal Discord DMs |
+
+### ChatMaster Setup
+
+ChatMaster sends alerts directly to your Discord DMs - useful when you're not watching a channel.
+
+1. **Get API credentials** - Use `/alert_api register` in a Discord server with ChatMaster bot
+2. **Configure Heimdallr**:
+
+```yaml
+notifications:
+  chatmaster:
+    enabled: true
+    api_url: "http://18.232.150.112:8080/api/v1"  # ChatMaster Alert API
+    api_key: ""       # Set via CHATMASTER_API_KEY env var
+    api_secret: ""    # Set via CHATMASTER_API_SECRET env var
+
+    routing:
+      p1_alerts: true       # Critical alerts
+      p2_alerts: true       # High priority
+      p3_alerts: false      # Normal (can be noisy)
+      health_changes: true  # Service state changes
+      action_results: false # Remediation results
+```
+
+**Why ChatMaster vs Discord Webhooks?**
+- Webhooks post to channels; ChatMaster sends DMs directly to you
+- Works even if you're not watching the channel
+- Per-user routing - different alerts to different people
 
 ## Safety Features
 

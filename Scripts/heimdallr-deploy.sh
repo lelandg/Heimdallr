@@ -59,7 +59,7 @@ rsync -avz \
 
 echo ""
 echo "[2/3] Installing dependencies..."
-ssh -i "$SSH_KEY" "$EC2_HOST" "cd $REMOTE_PATH && source venv/bin/activate && pip install -q -r requirements.txt"
+ssh -i "$SSH_KEY" "$EC2_HOST" "cd $REMOTE_PATH && if [ ! -d .venv ]; then python3 -m venv .venv; fi && source .venv/bin/activate && pip install -q -r requirements.txt"
 
 if [[ "$RESTART" == "true" ]]; then
     echo ""
