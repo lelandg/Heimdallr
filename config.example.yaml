@@ -122,7 +122,7 @@ notifications:
   # Get API key: Use /alert_api register in Discord (requires ChatMaster bot)
   chatmaster:
     enabled: false
-    api_url: "http://18.232.150.112:8080/api/v1"  # ChatMaster Alert API
+    api_url: "http://98.89.20.116:8080/api/v1"  # ChatMaster Alert API
     api_key: ""       # Or set CHATMASTER_API_KEY env var
     api_secret: ""    # Or set CHATMASTER_API_SECRET env var
 

@@ -136,17 +136,7 @@ Environment variables override config.yaml:
 
 ### EC2 Deployment
 
-```bash
-# Set environment variables for scripts
-export HEIMDALLR_EC2_HOST=ubuntu@your-instance-ip
-export HEIMDALLR_SSH_KEY=$HOME/.ssh/your-key.pem
-export HEIMDALLR_INSTANCE_ID=i-your-instance-id
-
-# Use helper scripts
-./Scripts/heimdallr-deploy.sh --restart
-./Scripts/heimdallr-logs.sh
-./Scripts/heimdallr-status.sh
-```
+See `ec2-deployment.local.md` for instance details, IP addresses, and SSH commands (gitignored).
 
 ### systemd Service
 

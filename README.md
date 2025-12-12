@@ -318,7 +318,7 @@ ChatMaster sends alerts directly to your Discord DMs - useful when you're not wa
 notifications:
   chatmaster:
     enabled: true
-    api_url: "http://18.232.150.112:8080/api/v1"  # ChatMaster Alert API
+    api_url: "http://98.89.20.116:8080/api/v1"  # ChatMaster Alert API
     api_key: ""       # Set via CHATMASTER_API_KEY env var
     api_secret: ""    # Set via CHATMASTER_API_SECRET env var
 

@@ -44,6 +44,7 @@ config.yaml
 .env
 .env.*
 !.env.example
+ec2-deployment.local.md
 
 # Logs
 Logs/
