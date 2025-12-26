@@ -28,6 +28,7 @@ from app.action_executor import ActionExecutor
 from app.safety_guard import SafetyGuard, SafetyCheckResult
 from app.audit_logger import AuditLogger
 from app.notifier import Notifier
+from app.api import app as api_app, set_monitor_app
 
 
 def setup_logging(config: AppConfig) -> None:
@@ -162,6 +163,9 @@ class MonitorApp:
         # Initialize remaining components
         self._init_components()
 
+        # Set up API
+        set_monitor_app(self)
+
         # Start monitoring loops
         self._running = True
         await self._run_monitoring_loop()
@@ -229,19 +233,32 @@ class MonitorApp:
 
     async def _run_monitoring_loop(self) -> None:
         """Main monitoring loop."""
+        import uvicorn
+
         self.log.info(f"Monitoring {len(self.config.monitoring.amplify_apps)} Amplify apps")
         self.log.info(f"Monitoring {len(self.config.monitoring.ec2_instances)} EC2 instances")
         self.log.info(f"Log poll interval: {self.config.monitoring.log_poll_interval}s")
         self.log.info(f"Health check interval: {self.config.monitoring.health_check_interval}s")
+
+        # Start API server
+        api_config = uvicorn.Config(
+            api_app,
+            host="0.0.0.0",
+            port=8000,
+            log_level="warning",  # Reduce uvicorn log noise
+        )
+        api_server = uvicorn.Server(api_config)
 
         # Start background tasks
         tasks = [
             asyncio.create_task(self.log_collector.start(), name="log_collector"),
             asyncio.create_task(self.service_monitor.start(), name="service_monitor"),
             asyncio.create_task(self.alert_manager.start(), name="alert_manager"),
+            asyncio.create_task(api_server.serve(), name="api_server"),
         ]
 
         self.log.info("Monitor started. Press Ctrl+C to stop.")
+        self.log.info("API server running on http://0.0.0.0:8000")
 
         try:
             # Wait for shutdown signal

@@ -131,8 +131,11 @@ class ChatMasterSettings:
 @dataclass
 class NotificationSettings:
     """Notification channel configuration."""
+    # Global kill switch - disables ALL notifications when False
+    enabled: bool = True
+
     # Email via SES
-    email_enabled: bool = True
+    email_enabled: bool = False
     email_recipients: list[str] = field(default_factory=list)
     email_from: str = "monitor@yourdomain.com"
 
@@ -280,7 +283,8 @@ class AppConfig:
                 require_approval_for=act_data.get("require_approval_for", ["redeploy", "terminate"]),
             ),
             notifications=NotificationSettings(
-                email_enabled=bool(notif_data.get("email", {}).get("enabled", True)),
+                enabled=bool(notif_data.get("enabled", True)),
+                email_enabled=bool(notif_data.get("email", {}).get("enabled", False)),
                 email_recipients=notif_data.get("email", {}).get("recipients", []),
                 email_from=str(notif_data.get("email", {}).get("from", "monitor@yourdomain.com")),
                 slack_enabled=bool(notif_data.get("slack", {}).get("enabled", False)),

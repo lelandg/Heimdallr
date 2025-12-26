@@ -5,6 +5,7 @@ Provides HTTP endpoints for:
 - Manual trigger endpoints
 - Configuration management
 - Alert and action management
+- Secure alert API for external triggers
 """
 from __future__ import annotations
 
@@ -12,9 +13,11 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Query, BackgroundTasks, Request, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+
+from app.api_auth import APIAuthenticator
 
 log = logging.getLogger("monitor.api")
 
@@ -28,11 +31,22 @@ app = FastAPI(
 # Global reference to MonitorApp (set by main.py)
 _monitor_app = None
 
+# Global API authenticator (set by main.py)
+_api_auth: Optional[APIAuthenticator] = None
+
 
 def set_monitor_app(monitor_app) -> None:
     """Set the global monitor app reference."""
-    global _monitor_app
+    global _monitor_app, _api_auth
     _monitor_app = monitor_app
+
+    # Set up API authenticator using ChatMaster credentials
+    chatmaster = monitor_app.config.notifications.chatmaster
+    if chatmaster.api_key and chatmaster.api_secret:
+        _api_auth = APIAuthenticator(chatmaster.api_key, chatmaster.api_secret)
+        log.info("API authentication configured using ChatMaster credentials")
+    else:
+        log.warning("API authentication not configured (no ChatMaster credentials)")
 
 
 def get_monitor_app():
@@ -40,6 +54,13 @@ def get_monitor_app():
     if _monitor_app is None:
         raise HTTPException(status_code=503, detail="Monitor not initialized")
     return _monitor_app
+
+
+def get_api_auth() -> APIAuthenticator:
+    """Get the API authenticator, raising if not configured."""
+    if _api_auth is None:
+        raise HTTPException(status_code=503, detail="API authentication not configured")
+    return _api_auth
 
 
 # ============================================================================
@@ -115,6 +136,22 @@ class StatsResponse(BaseModel):
     alerts: Dict[str, Any]
     actions: Dict[str, Any]
     llm: Dict[str, Any]
+
+
+class SendAlertRequest(BaseModel):
+    """Request to send a custom alert."""
+    service: str = Field(..., description="Service name (e.g., 'Heimdallr', 'ChameleonLabs')")
+    priority: str = Field(..., description="Priority level: P1, P2, P3, or P4")
+    title: str = Field(..., description="Alert title")
+    message: str = Field(..., description="Alert message body")
+    details: Dict[str, Any] = Field(default_factory=dict, description="Optional additional details")
+
+
+class SendAlertResponse(BaseModel):
+    """Response from sending an alert."""
+    success: bool
+    channels: Dict[str, bool] = Field(default_factory=dict, description="Success status per channel")
+    message: str
 
 
 # ============================================================================
@@ -462,6 +499,13 @@ async def get_config() -> Dict:
             "max_restarts_per_hour": config.actions.max_restarts_per_hour,
             "cooldown_minutes": config.actions.cooldown_minutes,
         },
+        "notifications": {
+            "enabled": config.notifications.enabled,
+            "email_enabled": config.notifications.email_enabled,
+            "slack_enabled": config.notifications.slack_enabled,
+            "discord_enabled": config.notifications.discord_enabled,
+            "chatmaster_enabled": config.notifications.chatmaster.enabled,
+        },
     }
 
 
@@ -577,4 +621,113 @@ async def trigger_log_scan(
             }
             for e in errors[:20]  # Limit response size
         ],
+    }
+
+
+# ============================================================================
+# Secure Alert API (authenticated via HMAC)
+# ============================================================================
+
+async def require_auth(request: Request):
+    """Dependency that requires API authentication."""
+    auth = get_api_auth()
+    await auth(request)
+
+
+@app.post(
+    "/api/v1/alert/send",
+    response_model=SendAlertResponse,
+    tags=["Secure API"],
+    summary="Send a custom alert",
+    description="Send a custom alert through all configured notification channels. "
+                "Requires HMAC-SHA256 authentication using ChatMaster credentials.",
+)
+async def send_custom_alert(
+    request: Request,
+    body: SendAlertRequest,
+    _auth: None = Depends(require_auth),
+) -> SendAlertResponse:
+    """Send a custom alert through notification channels.
+
+    This endpoint requires HMAC-SHA256 authentication.
+    Use the same credentials configured for ChatMaster.
+
+    Headers required:
+    - X-API-Key: Your API key
+    - X-Timestamp: Unix timestamp (seconds)
+    - X-Signature: HMAC-SHA256(secret, f"{timestamp}.{body}")
+    """
+    monitor = get_monitor_app()
+
+    from app.notifier import Notification, NotificationPriority, NotificationChannel
+
+    # Validate and map priority
+    priority_map = {
+        "P1": NotificationPriority.CRITICAL,
+        "P2": NotificationPriority.HIGH,
+        "P3": NotificationPriority.NORMAL,
+        "P4": NotificationPriority.LOW,
+    }
+
+    if body.priority.upper() not in priority_map:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid priority: {body.priority}. Must be P1, P2, P3, or P4",
+        )
+
+    priority = priority_map[body.priority.upper()]
+
+    # Build channel list based on configuration
+    channels = []
+    settings = monitor.config.notifications
+
+    if settings.email_enabled:
+        channels.append(NotificationChannel.EMAIL)
+    if settings.slack_enabled:
+        channels.append(NotificationChannel.SLACK)
+    if settings.discord_enabled:
+        channels.append(NotificationChannel.DISCORD)
+    if settings.chatmaster.enabled:
+        channels.append(NotificationChannel.CHATMASTER)
+
+    if not channels:
+        return SendAlertResponse(
+            success=False,
+            channels={},
+            message="No notification channels configured",
+        )
+
+    # Create and send notification
+    notification = Notification(
+        title=body.title,
+        message=body.message,
+        priority=priority,
+        channels=channels,
+        service=body.service,
+        details=body.details,
+    )
+
+    results = await monitor.notifier.send_notification(notification)
+
+    # Check if any channel succeeded
+    any_success = any(results.values())
+
+    return SendAlertResponse(
+        success=any_success,
+        channels=results,
+        message="Alert sent successfully" if any_success else "All channels failed",
+    )
+
+
+@app.get(
+    "/api/v1/alert/test",
+    tags=["Secure API"],
+    summary="Test authentication",
+    description="Test if API authentication is working (no auth required for this endpoint)",
+)
+async def test_auth_status() -> Dict[str, Any]:
+    """Check if API authentication is configured."""
+    return {
+        "auth_configured": _api_auth is not None and _api_auth.is_configured,
+        "message": "Use POST /api/v1/alert/send with HMAC authentication to send alerts",
     }

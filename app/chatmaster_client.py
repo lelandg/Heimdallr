@@ -5,6 +5,7 @@ This complements webhook notifications by allowing personalized DM alerts.
 """
 from __future__ import annotations
 
+import asyncio
 import hmac
 import hashlib
 import json
@@ -57,7 +58,11 @@ class ChatMasterClient:
         """Get or create HTTP session with connection pooling."""
         if self._session is None or self._session.closed:
             self._session = aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=self.timeout)
+                timeout=aiohttp.ClientTimeout(
+                    total=self.timeout,
+                    connect=5.0,  # Connect timeout
+                    sock_connect=5.0,  # Socket connect timeout
+                )
             )
         return self._session
 
@@ -128,6 +133,7 @@ class ChatMasterClient:
                     "X-Signature": signature,
                 }
 
+                log.debug(f"ChatMaster: Sending alert to {self.api_url}/alert")
                 session = await self._get_session()
                 async with session.post(
                     f"{self.api_url}/alert",
@@ -165,6 +171,15 @@ class ChatMasterClient:
                         log.error(f"ChatMaster error {response.status}: {text}")
                         return False
 
+            except asyncio.TimeoutError as e:
+                if attempt < max_retries:
+                    log.warning(f"ChatMaster timeout ({self.api_url}). Retrying in {retry_delay}s...")
+                    await self._sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                log.error(f"ChatMaster timeout after {max_retries + 1} attempts to {self.api_url}")
+                return False
+
             except aiohttp.ClientError as e:
                 if attempt < max_retries:
                     log.warning(f"ChatMaster request failed: {e}. Retrying...")
@@ -175,14 +190,13 @@ class ChatMasterClient:
                 return False
 
             except Exception as e:
-                log.error(f"ChatMaster unexpected error: {e}")
+                log.error(f"ChatMaster unexpected error: {type(e).__name__}: {e!r}")
                 return False
 
         return False
 
     async def _sleep(self, seconds: float) -> None:
         """Async sleep helper for testing."""
-        import asyncio
         await asyncio.sleep(seconds)
 
     async def close(self) -> None:

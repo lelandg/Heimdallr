@@ -177,6 +177,11 @@ class Notifier:
         Returns:
             Dict mapping channel to success status
         """
+        # Global kill switch - if notifications are disabled, skip everything
+        if not self.settings.enabled:
+            log.debug("Notifications globally disabled, skipping")
+            return {}
+
         results = {}
 
         for channel in notification.channels:
@@ -482,6 +487,7 @@ class Notifier:
     def get_stats(self) -> Dict:
         """Get notifier statistics."""
         return {
+            "enabled": self.settings.enabled,
             "email_enabled": self.settings.email_enabled,
             "slack_enabled": self.settings.slack_enabled,
             "discord_enabled": self.settings.discord_enabled,

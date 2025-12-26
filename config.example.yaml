@@ -100,6 +100,9 @@ actions:
 # Notifications
 # ─────────────────────────────────────────────────────────────────────────────
 notifications:
+  # Global kill switch - set to false to disable ALL notifications
+  enabled: false
+
   # Email via AWS SES
   email:
     enabled: false
@@ -120,6 +123,9 @@ notifications:
   # ChatMaster API (Discord DMs)
   # Sends alerts directly to your Discord DMs, even if you're not watching a channel
   # Get API key: Use /alert_api register in Discord (requires ChatMaster bot)
+  #
+  # NOTE: These credentials also enable the secure Alert API (POST /api/v1/alert/send)
+  # allowing ChatMaster or other services to trigger alerts on Heimdallr.
   chatmaster:
     enabled: false
     api_url: "http://98.89.20.116:8080/api/v1"  # ChatMaster Alert API

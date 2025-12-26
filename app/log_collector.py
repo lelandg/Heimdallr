@@ -75,6 +75,11 @@ ERROR_PATTERNS = [
     (r'SIGKILL|SIGTERM|killed', ErrorSeverity.CRITICAL, 'killed'),
     (r'crash(?:ed)?|segfault|core dump', ErrorSeverity.CRITICAL, 'crash'),
 
+    # Known noise patterns (must be before generic ERROR)
+    # These are typically bot/scanner activity, not real issues
+    (r'MissingCSRF', ErrorSeverity.INFO, 'csrf_bot'),
+    (r'Server Action "x"', ErrorSeverity.INFO, 'scanner_probe'),
+
     # Error patterns
     (r'ERROR|Error|error', ErrorSeverity.ERROR, 'error'),
     (r'Exception|exception', ErrorSeverity.ERROR, 'exception'),
