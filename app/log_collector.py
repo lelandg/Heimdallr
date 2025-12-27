@@ -79,6 +79,10 @@ ERROR_PATTERNS = [
     # These are typically bot/scanner activity, not real issues
     (r'MissingCSRF', ErrorSeverity.INFO, 'csrf_bot'),
     (r'Server Action "x"', ErrorSeverity.INFO, 'scanner_probe'),
+    # Auth.js v5 bug: TypeError when handling malformed CSRF requests from bots
+    # See: https://errors.authjs.dev#missingcsrf
+    (r"Cannot read properties of undefined.*reading.*'type'", ErrorSeverity.INFO, 'authjs_csrf_bug'),
+    (r'\[auth\].*TypeError', ErrorSeverity.INFO, 'authjs_error'),
 
     # Error patterns
     (r'ERROR|Error|error', ErrorSeverity.ERROR, 'error'),
