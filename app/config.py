@@ -107,6 +107,50 @@ class ActionSettings:
     require_approval_for: list[str] = field(default_factory=lambda: ["redeploy", "terminate"])
 
 
+# Carrier SMS gateway mapping
+SMS_GATEWAYS: dict[str, str] = {
+    "att": "txt.att.net",
+    "verizon": "vtext.com",
+    "tmobile": "tmomail.net",
+    "sprint": "messaging.sprintpcs.com",
+    "uscellular": "email.uscc.net",
+    "googlefi": "msg.fi.google.com",
+    "mint": "mailmymobile.net",
+    "cricket": "sms.cricketwireless.net",
+    "metropcs": "mymetropcs.com",
+    "boost": "sms.myboostmobile.com",
+    "republic": "text.republicwireless.com",
+    "xfinity": "vtext.com",  # Uses Verizon gateway
+    "visible": "vtext.com",  # Uses Verizon gateway
+}
+
+
+@dataclass
+class SMSRecipient:
+    """SMS recipient configuration."""
+    phone: str  # 10-digit phone number (no dashes/spaces)
+    carrier: str  # Carrier key from SMS_GATEWAYS
+    name: str = ""  # Optional friendly name
+
+    def get_email_address(self) -> str:
+        """Get the email-to-SMS gateway address."""
+        gateway = SMS_GATEWAYS.get(self.carrier.lower())
+        if not gateway:
+            raise ValueError(f"Unknown carrier: {self.carrier}")
+        # Strip non-digits from phone number
+        phone = "".join(c for c in self.phone if c.isdigit())
+        return f"{phone}@{gateway}"
+
+
+@dataclass
+class SMSSettings:
+    """SMS notification settings via email-to-SMS gateways."""
+    enabled: bool = False
+    recipients: list[SMSRecipient] = field(default_factory=list)
+    # Which alert priorities trigger SMS (P1/P2 by default - SMS is intrusive)
+    priorities: list[str] = field(default_factory=lambda: ["P1", "P2"])
+
+
 @dataclass
 class ChatMasterRouting:
     """ChatMaster alert routing configuration."""
@@ -139,6 +183,9 @@ class NotificationSettings:
     email_recipients: list[str] = field(default_factory=list)
     email_from: str = "monitor@yourdomain.com"
 
+    # SMS via email-to-SMS gateways
+    sms: SMSSettings = field(default_factory=SMSSettings)
+
     # Slack webhook
     slack_enabled: bool = False
     slack_webhook_url: str = ""
@@ -159,6 +206,27 @@ class LoggingSettings:
     log_max_bytes: int = 10_000_000  # 10MB
     log_backup_count: int = 5
     log_llm_interactions: bool = True
+
+
+def _parse_sms_settings(data: dict) -> SMSSettings:
+    """Parse SMS settings from config data."""
+    if not data:
+        return SMSSettings()
+
+    recipients = []
+    for r in data.get("recipients", []):
+        if isinstance(r, dict):
+            recipients.append(SMSRecipient(
+                phone=str(r.get("phone", "")),
+                carrier=str(r.get("carrier", "")),
+                name=str(r.get("name", "")),
+            ))
+
+    return SMSSettings(
+        enabled=bool(data.get("enabled", False)),
+        recipients=recipients,
+        priorities=data.get("priorities", ["P1", "P2"]),
+    )
 
 
 def _parse_chatmaster_settings(data: dict) -> ChatMasterSettings:
@@ -287,6 +355,7 @@ class AppConfig:
                 email_enabled=bool(notif_data.get("email", {}).get("enabled", False)),
                 email_recipients=notif_data.get("email", {}).get("recipients", []),
                 email_from=str(notif_data.get("email", {}).get("from", "monitor@yourdomain.com")),
+                sms=_parse_sms_settings(notif_data.get("sms", {})),
                 slack_enabled=bool(notif_data.get("slack", {}).get("enabled", False)),
                 slack_webhook_url=str(notif_data.get("slack", {}).get("webhook_url", "")),
                 discord_enabled=bool(notif_data.get("discord", {}).get("enabled", False)),

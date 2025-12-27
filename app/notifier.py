@@ -29,6 +29,7 @@ log = logging.getLogger("monitor.notifier")
 class NotificationChannel(Enum):
     """Available notification channels."""
     EMAIL = "email"
+    SMS = "sms"
     SLACK = "slack"
     DISCORD = "discord"
     CHATMASTER = "chatmaster"
@@ -194,6 +195,8 @@ class Notifier:
             try:
                 if channel == NotificationChannel.EMAIL:
                     success = await self._send_email(notification)
+                elif channel == NotificationChannel.SMS:
+                    success = await self._send_sms(notification)
                 elif channel == NotificationChannel.SLACK:
                     success = await self._send_slack(notification)
                 elif channel == NotificationChannel.DISCORD:
@@ -248,6 +251,78 @@ class Notifier:
 
         except Exception as e:
             log.error(f"SES email failed: {e}")
+            return False
+
+    async def _send_sms(self, notification: Notification) -> bool:
+        """Send SMS via carrier email-to-SMS gateway.
+
+        Uses AWS SES to send emails to carrier gateways like 5551234567@txt.att.net
+        which are then delivered as SMS messages. Free and requires no additional APIs.
+        """
+        sms_settings = self.settings.sms
+        if not sms_settings.enabled:
+            return False
+
+        if not sms_settings.recipients:
+            log.warning("No SMS recipients configured")
+            return False
+
+        # Format SMS-appropriate short message (160 char limit)
+        priority_prefix = f"[{notification.priority.value.upper()[:4]}]"
+        service = notification.service[:15] if notification.service else "Alert"
+        title = notification.title[:50]
+        # Truncate message to fit within ~160 chars total
+        max_msg_len = 160 - len(priority_prefix) - len(service) - len(title) - 5  # spaces and colon
+        message = notification.message[:max(20, max_msg_len)]
+        if len(notification.message) > max_msg_len:
+            message = message.rstrip() + "..."
+
+        sms_body = f"{priority_prefix} {service}: {title} - {message}"
+        if len(sms_body) > 160:
+            sms_body = sms_body[:157] + "..."
+
+        # Get email addresses for all recipients
+        sms_addresses = []
+        for recipient in sms_settings.recipients:
+            try:
+                addr = recipient.get_email_address()
+                sms_addresses.append(addr)
+            except ValueError as e:
+                log.warning(f"Skipping SMS recipient: {e}")
+
+        if not sms_addresses:
+            log.warning("No valid SMS gateway addresses")
+            return False
+
+        try:
+            from aiobotocore.session import get_session
+
+            session = get_session()
+            async with session.create_client("ses", region_name="us-east-1") as ses:
+                # Send to all recipients (SES handles multiple ToAddresses)
+                response = await ses.send_email(
+                    Source=self.settings.email_from,
+                    Destination={
+                        "ToAddresses": sms_addresses,
+                    },
+                    Message={
+                        "Subject": {
+                            # Keep subject very short - some carriers show it
+                            "Data": f"{priority_prefix} {service}",
+                        },
+                        "Body": {
+                            # Plain text only for SMS
+                            "Text": {"Data": sms_body},
+                        },
+                    },
+                )
+
+                message_id = response.get("MessageId")
+                log.info(f"SMS sent to {len(sms_addresses)} recipient(s): {message_id}")
+                return True
+
+        except Exception as e:
+            log.error(f"SMS via SES failed: {e}")
             return False
 
     async def _send_slack(self, notification: Notification) -> bool:
@@ -396,6 +471,11 @@ class Notifier:
             if self.settings.discord_enabled:
                 channels.append(NotificationChannel.DISCORD)
 
+        # SMS: check if enabled and if this priority is configured
+        sms = self.settings.sms
+        if sms.enabled and sms.recipients and alert.priority.value in sms.priorities:
+            channels.append(NotificationChannel.SMS)
+
         # ChatMaster handles its own priority routing internally
         if self._chatmaster.is_configured:
             channels.append(NotificationChannel.CHATMASTER)
@@ -489,6 +569,8 @@ class Notifier:
         return {
             "enabled": self.settings.enabled,
             "email_enabled": self.settings.email_enabled,
+            "sms_enabled": self.settings.sms.enabled,
+            "sms_recipients": len(self.settings.sms.recipients),
             "slack_enabled": self.settings.slack_enabled,
             "discord_enabled": self.settings.discord_enabled,
             "chatmaster_enabled": self._chatmaster.is_configured,

@@ -110,6 +110,29 @@ notifications:
     recipients:
       - admin@yourdomain.com
 
+  # SMS via carrier email-to-SMS gateways (FREE!)
+  # Each carrier has a gateway that converts emails to SMS messages.
+  # Format: your phone number + carrier gateway = email address
+  #
+  # Supported carriers:
+  #   att, verizon, tmobile, sprint, uscellular, googlefi, mint,
+  #   cricket, metropcs, boost, republic, xfinity, visible
+  sms:
+    enabled: false
+    recipients:
+      - phone: "5551234567"    # Your 10-digit phone number
+        carrier: att           # Your carrier (see list above)
+        name: "Admin"          # Optional friendly name
+      # Add more recipients:
+      # - phone: "5559876543"
+      #   carrier: verizon
+      #   name: "On-Call"
+
+    # Which priorities trigger SMS (P1/P2 by default - SMS is intrusive)
+    priorities:
+      - P1  # Critical
+      - P2  # High
+
   # Slack webhook
   slack:
     enabled: false
